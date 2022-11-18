@@ -1,8 +1,10 @@
 import pandas as pd
 import pendulum
 import requests
+from prefect import flow, task
 
 
+@task(retries=5)
 def fetch_tickets_by_day(day: pendulum.datetime) -> list:
     where = f"""ADDDATE >= DATE '{day.format("YYYY-MM-DD HH:mm:ss")}' - INTERVAL '24' HOUR"""
 
@@ -23,6 +25,7 @@ def fetch_tickets_by_day(day: pendulum.datetime) -> list:
     return tickets
 
 
+@task
 def convert_ticket_dates(tickets_list: list) -> pd.DataFrame:
     tickets_df = pd.DataFrame(tickets_list)
 
@@ -33,11 +36,19 @@ def convert_ticket_dates(tickets_list: list) -> pd.DataFrame:
     return tickets_df
 
 
+@task
 def write_tickets_to_csv(tickets_df: pd.DataFrame) -> None:
     tickets_df.to_csv(f"""parking_tickets_{pendulum.now().to_iso8601_string()}.csv""")
 
 
-if __name__ == "__main__":
+@flow(name="Fetch Parking Tickets", retries=5)
+def fetch_parking_tickets(
+    date=pendulum.today().subtract(days=1),
+) -> None:
     tickets = fetch_tickets_by_day(day=pendulum.today().subtract(days=1))
     tickets_df = convert_ticket_dates(tickets)
     write_tickets_to_csv(tickets_df)
+
+
+if __name__ == "__main__":
+    fetch_parking_tickets()
