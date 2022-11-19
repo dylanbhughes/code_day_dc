@@ -3,9 +3,12 @@ import pendulum
 import requests
 
 
+# Extract
 def fetch_tickets_by_day(day: pendulum.datetime) -> list:
+    # Defining our query to the API to get one day of data starting with the argument date
     where = f"""ADDDATE >= DATE '{day.format("YYYY-MM-DD HH:mm:ss")}' - INTERVAL '24' HOUR"""
 
+    # Talk to the API, pass our data
     response = requests.get(
         url=f"https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_APPS/SR_30days_Open/MapServer/8/query?where={where}&outFields=*&outSR=4326&f=json",
     )
@@ -23,6 +26,7 @@ def fetch_tickets_by_day(day: pendulum.datetime) -> list:
     return tickets
 
 
+# Transform
 def convert_ticket_dates(tickets_list: list) -> pd.DataFrame:
     tickets_df = pd.DataFrame(tickets_list)
 
@@ -33,6 +37,7 @@ def convert_ticket_dates(tickets_list: list) -> pd.DataFrame:
     return tickets_df
 
 
+# Load
 def write_tickets_to_csv(tickets_df: pd.DataFrame) -> None:
     tickets_df.to_csv(f"""parking_tickets_{pendulum.now().to_iso8601_string()}.csv""")
 

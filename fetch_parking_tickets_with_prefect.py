@@ -4,7 +4,7 @@ import requests
 from prefect import flow, task
 
 
-@task(retries=5)
+@task(retries=5, retry_delay_seconds=3600)
 def fetch_tickets_by_day(day: pendulum.datetime) -> list:
     where = f"""ADDDATE >= DATE '{day.format("YYYY-MM-DD HH:mm:ss")}' - INTERVAL '24' HOUR"""
 
